@@ -1,40 +1,68 @@
-import numpy as np
-import matplotlib.pyplot as plt
-from matplotlib.animation import FuncAnimation
+from OpenGL.GL import *
+from OpenGL.GLUT import *
+from OpenGL.GLU import *
+from math import sin, cos, pi
 
-# Create window
-fig, ax = plt.subplots()
-ax.set_aspect('equal')
-ax.set_xlim(-2, 2)
-ax.set_ylim(-2, 2)
-ax.axis('off')
+# Window size
+width, height = 600, 600
 
 # Wheel properties
-radius = 1
+radius = 1.0
 num_spokes = 8
+theta_steps = 100  # for circle approximation
+rotation_angle = 0.0  # global rotation
 
-# Draw wheel (circle)
-theta = np.linspace(0, 2*np.pi, 300)
-circle, = ax.plot(radius*np.cos(theta), radius*np.sin(theta), linewidth=2)
+def draw_circle(cx, cy, r, steps=100):
+    glBegin(GL_LINE_LOOP)
+    for i in range(steps):
+        angle = 2 * pi * i / steps
+        glVertex2f(cx + r * cos(angle), cy + r * sin(angle))
+    glEnd()
 
-# Draw spokes
-angles = np.linspace(0, 2*np.pi, num_spokes, endpoint=False)
-spokes = []
-for angle in angles:
-    line, = ax.plot([0, radius*np.cos(angle)],
-                     [0, radius*np.sin(angle)], linewidth=2)
-    spokes.append(line)
+def draw_wheel():
+    global rotation_angle
+    # Draw circle
+    glColor3f(0, 0, 0)
+    draw_circle(0, 0, radius, theta_steps)
+    
+    # Draw spokes
+    for i in range(num_spokes):
+        angle = 2 * pi * i / num_spokes + rotation_angle
+        glBegin(GL_LINES)
+        glVertex2f(0, 0)
+        glVertex2f(radius * cos(angle), radius * sin(angle))
+        glEnd()
 
-# Rotation function
-def rotate(frame):
-    rotation = frame * 0.1
-    for i, line in enumerate(spokes):
-        a = angles[i] + rotation
-        line.set_data([0, radius*np.cos(a)],
-                      [0, radius*np.sin(a)])
-    return spokes
+def display():
+    glClear(GL_COLOR_BUFFER_BIT)
+    glLoadIdentity()
+    
+    draw_wheel()
+    
+    glutSwapBuffers()
 
-# Animate
-ani = FuncAnimation(fig, rotate, frames=200, interval=50)
+def timer(value):
+    global rotation_angle
+    rotation_angle += 0.1  # rotation speed
+    if rotation_angle > 2*pi:
+        rotation_angle -= 2*pi
+    glutPostRedisplay()
+    glutTimerFunc(50, timer, 0)  # call every 50ms
 
-plt.show()
+def main():
+    glutInit()
+    glutInitDisplayMode(GLUT_DOUBLE | GLUT_RGB)
+    glutInitWindowSize(width, height)
+    glutCreateWindow(b"Rotating Wheel  OpenGL")
+    
+    glClearColor(1,1,1,1)
+    glMatrixMode(GL_PROJECTION)
+    glLoadIdentity()
+    gluOrtho2D(-2, 2, -2, 2)
+    
+    glutDisplayFunc(display)
+    glutTimerFunc(0, timer, 0)
+    glutMainLoop()
+
+if __name__ == "__main__":
+    main()

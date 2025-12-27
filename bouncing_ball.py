@@ -1,37 +1,50 @@
-import matplotlib.pyplot as plt
-from matplotlib.animation import FuncAnimation
+from OpenGL.GL import *
+from OpenGL.GLUT import *
+from OpenGL.GLU import *
+from math import cos, sin, pi
 
-# Create window
-fig, ax = plt.subplots()
-ax.set_xlim(0, 10)
-ax.set_ylim(0, 5)
-ax.axis('off')
+# Ball properties
+x, y = 0.0, 0.0
+dx, dy = 0.02, 0.03
+radius = 0.1
 
-# Ball
-ball = plt.Circle((1, 1), 0.3, color='red')
-ax.add_patch(ball)
+def draw_circle(cx, cy, r):
+    glBegin(GL_TRIANGLE_FAN)
+    for i in range(50):
+        angle = 2 * pi * i / 50
+        glVertex2f(cx + r * cos(angle), cy + r * sin(angle))
+    glEnd()
 
-# Speed
-dx, dy = 0.05, 0.05
-x, y = 1, 1
+def display():
+    glClear(GL_COLOR_BUFFER_BIT)
+    glColor3f(1, 0, 0)  # red ball
+    draw_circle(x, y, radius)
+    glutSwapBuffers()
 
-# Animation function
-def bounce(frame):
+def update(value):
     global x, y, dx, dy
 
     x += dx
     y += dy
 
     # Bounce from walls
-    if x <= 0.3 or x >= 9.7:
+    if x + radius > 1 or x - radius < -1:
         dx = -dx
-    if y <= 0.3 or y >= 4.7:
+    if y + radius > 1 or y - radius < -1:
         dy = -dy
 
-    ball.center = (x, y)
-    return ball,
+    glutPostRedisplay()
+    glutTimerFunc(16, update, 0)  # ~60 FPS
 
-# Animate
-ani = FuncAnimation(fig, bounce, frames=300, interval=20)
+# OpenGL setup
+glutInit()
+glutInitDisplayMode(GLUT_DOUBLE | GLUT_RGB)
+glutInitWindowSize(500, 500)
+glutCreateWindow(b"Bouncing Ball - OpenGL")
 
-plt.show()
+glClearColor(1, 1, 1, 1)
+gluOrtho2D(-1, 1, -1, 1)
+
+glutDisplayFunc(display)
+glutTimerFunc(0, update, 0)
+glutMainLoop()
